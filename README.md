@@ -16,7 +16,7 @@ Documentation:
 ## Requirements
 
 - Rootless Podman 5 or newer for deployment
-- `openssl` for the setup helper
+- `openssl` for deployment-secret generation
 - Python 3.12 and [uv](https://docs.astral.sh/uv/) for development
 - PostgreSQL 14 or newer for development and testing
 
@@ -25,32 +25,50 @@ production operators should place their own TLS-terminating reverse proxy in fro
 
 ## Podman Deployment
 
-Clone and install with one command:
+Create a unique Django secret in Podman's secret store. This command preserves an existing
+secret, so it is safe to run again:
 
 ```console
-git clone https://github.com/marcosousapoza/contextloom.git && cd contextloom && deploy/setup.sh
+podman secret exists contextloom-secret-key || (key="$(openssl rand -hex 32)" && printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: contextloom-secret-key\nstringData:\n  CONTEXTLOOM_SECRET_KEY: %s\n' "$key" | podman secret create contextloom-secret-key -)
 ```
 
-The helper generates the Django secret, creates persistent storage, pulls the published
-image, starts the pod, runs migrations, and creates the initial administrator. The generated
-secret is retained in the ignored, mode-0600 `deploy/contextloom.secrets.env`; protect that
-file because it is required to recreate matching Podman secrets.
+Then deploy directly from the public manifest:
+
+```console
+podman kube play --replace https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.1.0/deploy/contextloom.yml
+```
+
+Podman stores the serialized Kubernetes Secret separately from the image and source tree.
+The manifest resolves its `CONTEXTLOOM_SECRET_KEY` key through `secretKeyRef`; no plaintext
+secret file is created by ContextLoom. Back up the Podman secret store according to your
+host's secret-driver policy because losing or replacing this value invalidates browser
+sessions and personal access tokens.
+
+Unlike `podman run --secret type=env`, kube `secretKeyRef` expansion places the resolved value
+in the container configuration, where a host operator can view it with `podman inspect`. Use
+the same access controls for Podman administration as for the secret store itself.
+
+The application waits for PostgreSQL, applies migrations, idempotently creates the initial
+administrator, and then starts the server. The persistent volume claim is created by the
+same manifest.
 
 Sign in at <http://localhost:8000> with username `admin` and password `admin`. ContextLoom
 immediately requires replacing that password before any other page or Admin function can be
 used. Port 8000 binds to localhost by default; do not expose the initial credentials to an
 untrusted network.
 
-After secrets, the image, and storage exist, the deployment itself is always:
+For a checked-out manifest, the equivalent deployment command is:
 
 ```console
-podman play kube deploy/contextloom.yml
+podman kube play --replace deploy/contextloom.yml
 ```
 
-The manifest pulls `ghcr.io/marcosousapoza/contextloom:latest`. Version releases are also
-published with semantic-version tags, which are preferable for stable production
-deployments. Change the image tag in `deploy/contextloom.yml` to pin a release. The public
-package can be pulled anonymously.
+The release manifest pulls `ghcr.io/marcosousapoza/contextloom:0.1.0`. The same release image
+is also published as `0.1` and `latest`; exact versions are preferable for reproducible
+deployments. The public package can be pulled anonymously.
+
+Use a version-tagged manifest URL rather than `main`. Development on `main` may include a
+future manifest that is incompatible with the latest released image.
 
 Open <http://localhost:8000>. PostgreSQL shares the pod network but has no host-published
 port. Its named volume, `contextloom-postgres-data`, survives pod recreation.
@@ -117,11 +135,13 @@ This format is portability, not disaster recovery.
 
 1. Read `UPGRADING.md` and release notes.
 2. Back up PostgreSQL.
-3. Build or pull the new image.
-4. Run `contextloom migrate` once.
-5. Recreate the pod and check `/health` and `/ready`.
+3. Pin or select the new image or manifest version.
+4. Recreate the pod; `contextloom start` applies migrations before serving requests.
+5. Check `/health`, `/ready`, login, and an MCP request.
 
-Migrations are explicit and are not run automatically when the application starts.
+The `contextloom migrate` command remains available for development and maintenance. The
+production `contextloom start` command runs migrations automatically for the single-instance
+Podman deployment.
 
 ## PostgreSQL Backup
 
@@ -140,7 +160,9 @@ Stop application writes before a destructive restore and follow PostgreSQL's doc
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `CONTEXTLOOM_DATABASE_URL` | required | PostgreSQL URL |
-| `CONTEXTLOOM_SECRET_KEY` | required | Django and token-hash secret |
+| `CONTEXTLOOM_SECRET_KEY` | required | Django and token-hash secret; supplied by Podman in deployment |
+| `CONTEXTLOOM_DATABASE_WAIT_ATTEMPTS` | `30` | Production startup connection attempts |
+| `CONTEXTLOOM_DATABASE_WAIT_SECONDS` | `2` | Seconds between startup connection attempts |
 | `CONTEXTLOOM_HOST` / `CONTEXTLOOM_PORT` | `0.0.0.0` / `8000` | ASGI listener |
 | `CONTEXTLOOM_PUBLIC_URL` | `http://localhost:8000` | Canonical MCP URL |
 | `CONTEXTLOOM_ALLOWED_HOSTS` | local hosts | Django host allowlist |
@@ -151,8 +173,8 @@ Stop application writes before a destructive restore and follow PostgreSQL's doc
 | `CONTEXTLOOM_LOG_LEVEL` | `INFO` | stdout/stderr logging level |
 | `CONTEXTLOOM_FORWARDED_ALLOW_IPS` | `127.0.0.1` | Trusted proxy addresses |
 
-Resource-limit settings are documented in `deploy/contextloom.env.example` and the Django
-settings module.
+Non-secret deployment settings are summarized in `deploy/contextloom.env.example` and the
+Django settings module.
 
 ## Development
 
@@ -176,9 +198,10 @@ uv run python -m build
 podman build -t localhost/contextloom:0.1.0 .
 ```
 
-GitHub Actions builds the `Containerfile` for `linux/amd64` and `linux/arm64`. Pushes to
-`main` publish `latest` and commit-SHA tags to GHCR; `v*` Git tags publish semantic-version
-tags. Pull requests build without publishing.
+GitHub Actions builds the `Containerfile` for `linux/amd64` and `linux/arm64` on pull
+requests without publishing. Pushes to `main` run the normal CI workflow but do not build or
+publish a container. A matching `vX.Y.Z` Git tag publishes the same image as `X.Y.Z`, `X.Y`,
+and `latest`.
 
 ## License
 

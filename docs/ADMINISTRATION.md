@@ -10,11 +10,8 @@ Use `is_active` to enable or disable an account, `is_staff` to permit Admin acce
 `is_superuser` for full administrative privileges. ContextLoom does not define parallel
 roles, teams, or organizations.
 
-The setup command creates the first administrator automatically:
-
-```console
-deploy/setup.sh
-```
+The production `contextloom start` command creates the first administrator automatically
+after applying migrations. It is invoked by `deploy/contextloom.yml`.
 
 Sign in as `admin` with password `admin`. ContextLoom blocks all other browser pages until the
 password is replaced. The command is idempotent by username.
@@ -64,19 +61,35 @@ tokens, permissions, or complete infrastructure state.
 
 ## Secret Rotation
 
-Protect `deploy/contextloom.secrets.env` with the same care as an application credential.
-Losing it prevents the helper from recreating matching Podman secrets. Rotating
-`CONTEXTLOOM_SECRET_KEY` invalidates existing sessions and all personal access tokens.
+ContextLoom stores no deployment secret file. Protect and back up the Podman secret store
+according to the configured Podman secret driver. Its default `file` driver keeps secrets in
+read-protected host files.
+
+Rotate the secret deliberately with:
+
+```console
+(key="$(openssl rand -hex 32)" && printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: contextloom-secret-key\nstringData:\n  CONTEXTLOOM_SECRET_KEY: %s\n' "$key" | podman secret create --replace contextloom-secret-key -)
+podman kube play --replace https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.1.0/deploy/contextloom.yml
+```
+
+Replacing the Podman secret does not alter already-created containers, so pod replacement is
+required. Rotating `CONTEXTLOOM_SECRET_KEY` invalidates existing sessions and all personal
+access tokens.
 
 After changing deployment secrets, recreate the pod and run `/ready` checks before routing
 traffic to it.
 
 ## Container Images
 
-Published images are available at `ghcr.io/marcosousapoza/contextloom`. The `latest` tag
-tracks `main`; semantic-version tags identify releases and commit-SHA tags identify exact
-builds. Production deployments should pin a semantic-version or SHA tag in
-`deploy/contextloom.yml`, then use `podman play kube --replace deploy/contextloom.yml` to
-apply the update before running migrations with the target image.
+Published images are available at `ghcr.io/marcosousapoza/contextloom`. Containers are
+published only from `vX.Y.Z` release tags. Each release updates the exact `X.Y.Z` tag, its
+`X.Y` series alias, and `latest` to the same image. Production deployments should use the
+version-tagged manifest, which pins the exact image, then use `podman kube play --replace` to
+apply an update. The target image applies migrations before starting the server.
+
+To publish a release, update the version in `pyproject.toml` and the image tag in
+`deploy/contextloom.yml`, merge the tested changes into `main`, then create and push the
+matching tag, such as `v0.1.0`. The container workflow rejects malformed tags and tags that
+do not match the package or manifest version.
 
 The package is public and deployment hosts can pull it without registry credentials.

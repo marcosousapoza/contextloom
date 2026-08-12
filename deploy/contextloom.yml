@@ -21,8 +21,9 @@ spec:
   restartPolicy: Always
   containers:
     - name: contextloom
-      image: ghcr.io/marcosousapoza/contextloom:latest
+      image: ghcr.io/marcosousapoza/contextloom:0.1.0
       imagePullPolicy: Always
+      args: ["start"]
       env:
         - name: CONTEXTLOOM_DATABASE_URL
           value: "postgresql://contextloom@127.0.0.1:5432/contextloom"
@@ -48,7 +49,7 @@ spec:
         httpGet:
           path: /health
           port: 8000
-        initialDelaySeconds: 10
+        initialDelaySeconds: 120
         periodSeconds: 30
       readinessProbe:
         httpGet:

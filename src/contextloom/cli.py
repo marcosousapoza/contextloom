@@ -9,6 +9,7 @@ def main() -> None:
     aliases = {
         "migrate": ["migrate"],
         "create-admin": ["create_initial_admin"],
+        "start": ["start"],
         "serve": ["serve"],
     }
     if len(sys.argv) < 2 or sys.argv[1] not in aliases:

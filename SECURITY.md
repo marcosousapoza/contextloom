@@ -28,3 +28,10 @@ Rotate `CONTEXTLOOM_SECRET_KEY` only with care: rotation invalidates existing br
 sessions and all personal access tokens because it participates in token hashing. Never send
 database URLs, password values, secret keys, token values, exports, or database dumps in a
 security report.
+
+The Podman deployment stores the Django key as a Podman secret containing a serialized
+Kubernetes Secret and injects it through `secretKeyRef`. ContextLoom does not create a
+plaintext secret file. Podman's default `file` secret driver uses read-protected host storage;
+operators may configure another supported driver according to their security policy. Podman
+kube environment expansion also exposes the resolved value to host administrators through
+`podman inspect`; restrict Podman access accordingly.

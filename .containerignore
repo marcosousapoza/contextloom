@@ -5,7 +5,6 @@
 dist
 deploy/*.local.yml
 deploy/*.env
-deploy/contextloom.secrets.env
 prompt.md
 tests
 *.pyc

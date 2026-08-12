@@ -43,6 +43,10 @@ The standard `uv run python manage.py <command>` interface remains available.
 flow and marks that password as temporary. Use explicit command arguments for other local
 administrators. Assigned passwords must always be replaced on first login.
 
+The production image uses `contextloom start`, which waits for PostgreSQL, runs migrations,
+creates the initial administrator idempotently, and starts Uvicorn. Development keeps these
+steps explicit so migration failures remain easy to inspect.
+
 Public registration is intentionally absent. New accounts must be created through Django
 Admin so every assigned initial password is subject to the first-login replacement flow.
 
@@ -67,8 +71,9 @@ production image locally, run:
 podman build --tag localhost/contextloom:dev --file Containerfile .
 ```
 
-The container workflow validates multi-architecture builds on pull requests and publishes
-images from `main` and version tags to GitHub Container Registry.
+The container workflow validates multi-architecture builds on pull requests. It publishes
+images to GitHub Container Registry only for `vX.Y.Z` release tags that match the version in
+`pyproject.toml` and `deploy/contextloom.yml`.
 
 ## Migrations
 

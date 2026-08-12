@@ -16,7 +16,6 @@ RUN DJANGO_SETTINGS_MODULE=contextloom.config.settings \
 FROM python:3.12.11-slim-bookworm AS runtime
 LABEL org.opencontainers.image.title="ContextLoom" \
       org.opencontainers.image.description="Self-hosted categorized knowledge retrieval" \
-      org.opencontainers.image.version="0.1.0" \
       org.opencontainers.image.source="https://github.com/marcosousapoza/contextloom" \
       org.opencontainers.image.licenses="AGPL-3.0-or-later"
 RUN groupadd --gid 10001 contextloom \
