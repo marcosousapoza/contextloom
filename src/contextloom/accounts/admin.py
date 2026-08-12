@@ -2,11 +2,11 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 
-from contextloom.accounts.models import ApplicationSettings, User
+from contextloom.accounts.models import User
 
 admin.site.site_header = "ContextLoom administration"
 admin.site.site_title = "ContextLoom admin"
-admin.site.index_title = "Accounts and application settings"
+admin.site.index_title = "Account management"
 admin.site.unregister(Group)
 
 
@@ -26,14 +26,3 @@ class ContextLoomUserAdmin(UserAdmin):
         if not change:
             obj.password_change_required = True
         super().save_model(request, obj, form, change)
-
-
-@admin.register(ApplicationSettings)
-class ApplicationSettingsAdmin(admin.ModelAdmin):
-    fields = ("registration_enabled",)
-
-    def has_add_permission(self, request):
-        return not ApplicationSettings.objects.exists()
-
-    def has_delete_permission(self, request, obj=None):
-        return False

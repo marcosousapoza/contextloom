@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.test import Client
 from django.urls import reverse
 
-from contextloom.accounts.models import ApplicationSettings, PersonalAccessToken
+from contextloom.accounts.models import PersonalAccessToken
 from contextloom.accounts.services import authenticate_token
 from contextloom.knowledge.models import Archive, Category, ImportJob, Memory
 
@@ -31,12 +31,8 @@ def test_state_changing_form_requires_csrf(user):
 
 
 @pytest.mark.django_db
-def test_registration_is_database_configurable(client):
-    assert client.get(reverse("accounts:register")).status_code == 404
-    settings = ApplicationSettings.load()
-    settings.registration_enabled = True
-    settings.save()
-    assert client.get(reverse("accounts:register")).status_code == 200
+def test_public_registration_does_not_exist(client):
+    assert client.get("/accounts/register/").status_code == 404
 
 
 @pytest.mark.django_db
@@ -163,23 +159,3 @@ def test_admin_created_user_requires_password_change(client):
         {"username": account.username, "password": "assigned-password"},
     )
     assert response.url == reverse("accounts:password_change")
-
-
-@pytest.mark.django_db
-def test_self_registered_user_does_not_require_password_change(client):
-    settings = ApplicationSettings.load()
-    settings.registration_enabled = True
-    settings.save()
-    response = client.post(
-        reverse("accounts:register"),
-        {
-            "username": "registered",
-            "email": "registered@example.com",
-            "password1": "self-selected-password-42",
-            "password2": "self-selected-password-42",
-        },
-    )
-    assert response.status_code == 302
-    from contextloom.accounts.models import User
-
-    assert User.objects.get(username="registered").password_change_required is False

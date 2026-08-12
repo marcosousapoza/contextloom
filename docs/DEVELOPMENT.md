@@ -43,6 +43,9 @@ The standard `uv run python manage.py <command>` interface remains available.
 flow and marks that password as temporary. Use explicit command arguments for other local
 administrators. Assigned passwords must always be replaced on first login.
 
+Public registration is intentionally absent. New accounts must be created through Django
+Admin so every assigned initial password is subject to the first-login replacement flow.
+
 ## Quality Gate
 
 Before opening a pull request, run:

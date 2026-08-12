@@ -3,8 +3,8 @@
 ## Accounts
 
 Open `/admin/` with a superuser account. ContextLoom Admin exposes only users and the
-application registration setting. User categories, memories, archives, sessions, imports,
-and token hashes are deliberately absent.
+account management controls. User categories, memories, archives, sessions, imports, and
+token hashes are deliberately absent.
 
 Use `is_active` to enable or disable an account, `is_staff` to permit Admin access, and
 `is_superuser` for full administrative privileges. ContextLoom does not define parallel
@@ -21,13 +21,8 @@ password is replaced. The command is idempotent by username.
 
 Accounts created through Django Admin are also marked for a mandatory password change. The
 administrator assigns the initial password in the account creation form; the user signs in
-with it once and must replace it before using ContextLoom. Self-registered users are exempt
-because they choose their own password.
-
-## Registration
-
-Registration is disabled by default. Change **Application settings** in Admin to enable or
-disable it. The database setting takes precedence over the initial environment default.
+with it once and must replace it before using ContextLoom. Public registration is not
+available; administrators are the only account creators.
 
 ## Health
 

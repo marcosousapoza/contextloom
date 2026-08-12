@@ -6,7 +6,8 @@ has an isolated workspace; users cannot browse or modify another user's records.
 ## Sign In
 
 Open the URL supplied by the administrator and sign in with either your username or email
-address and password. Public registration appears only when an administrator enables it.
+address and password. Accounts are created only by an administrator; there is no public
+registration.
 
 If repeated login attempts fail, ContextLoom temporarily throttles further attempts. A
 disabled account cannot sign in or use existing personal access tokens.

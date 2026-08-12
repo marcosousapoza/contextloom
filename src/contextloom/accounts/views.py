@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.http import Http404
@@ -8,8 +7,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from contextloom.accounts.forms import LoginForm, ProfileForm, RegistrationForm, TokenForm
-from contextloom.accounts.models import ApplicationSettings, PersonalAccessToken
+from contextloom.accounts.forms import LoginForm, ProfileForm, TokenForm
+from contextloom.accounts.models import PersonalAccessToken
 from contextloom.accounts.services import (
     clear_login_failures,
     login_is_throttled,
@@ -57,17 +56,6 @@ class RequiredPasswordChangeView(PasswordChangeView):
 
     def get_success_url(self):
         return reverse("knowledge:home")
-
-
-def register(request):
-    if not ApplicationSettings.load().registration_enabled:
-        raise Http404
-    form = RegistrationForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        user = form.save()
-        login(request, user)
-        return redirect("knowledge:home")
-    return render(request, "accounts/register.html", {"form": form})
 
 
 @login_required

@@ -8,6 +8,5 @@
     {% csrf_token %}{{ form.as_p }}
     <button class="primary">Log in</button>
   </form>
-  {% if registration_enabled %}<p><a href="{% url 'accounts:register' %}">Create an account</a></p>{% endif %}
 </section>
 {% endblock %}

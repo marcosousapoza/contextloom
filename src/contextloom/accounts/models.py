@@ -23,27 +23,6 @@ class User(AbstractUser):
         super().save(*args, **kwargs)
 
 
-class ApplicationSettings(models.Model):
-    registration_enabled = models.BooleanField(default=False)
-
-    class Meta:
-        verbose_name_plural = "application settings"
-
-    def __str__(self):
-        return "Application settings"
-
-    def save(self, *args, **kwargs):
-        self.pk = 1
-        super().save(*args, **kwargs)
-
-    @classmethod
-    def load(cls):
-        return cls.objects.get_or_create(
-            pk=1,
-            defaults={"registration_enabled": settings.CONTEXTLOOM_REGISTRATION_ENABLED},
-        )[0]
-
-
 class LoginAttempt(models.Model):
     key = models.CharField(max_length=64, db_index=True)
     attempted_at = models.DateTimeField(default=timezone.now, db_index=True)

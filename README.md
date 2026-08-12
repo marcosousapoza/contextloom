@@ -145,7 +145,6 @@ Stop application writes before a destructive restore and follow PostgreSQL's doc
 | `CONTEXTLOOM_PUBLIC_URL` | `http://localhost:8000` | Canonical MCP URL |
 | `CONTEXTLOOM_ALLOWED_HOSTS` | local hosts | Django host allowlist |
 | `CONTEXTLOOM_CSRF_TRUSTED_ORIGINS` | empty | Trusted form origins |
-| `CONTEXTLOOM_REGISTRATION_ENABLED` | `false` | Initial registration setting |
 | `CONTEXTLOOM_SECURE_COOKIES` | `false` | Require HTTPS cookies |
 | `CONTEXTLOOM_MCP_ALLOWED_HOSTS` | local hosts | MCP DNS-rebinding allowlist |
 | `CONTEXTLOOM_MCP_ALLOWED_ORIGINS` | local origins | MCP origin allowlist |
