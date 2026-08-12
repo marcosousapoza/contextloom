@@ -25,7 +25,7 @@ production operators should place their own TLS-terminating reverse proxy in fro
 
 ## Podman Deployment
 
-The helper generates Podman secrets, creates persistent storage, builds the locked image,
+The helper generates Podman secrets, creates persistent storage, pulls the published image,
 starts the pod, and runs migrations. Generated source values are retained in the ignored,
 mode-0600 `deploy/contextloom.secrets.env`; protect that file because it is required to
 recreate matching secrets:
@@ -51,6 +51,13 @@ After secrets, the image, and storage exist, the deployment itself is always:
 ```console
 podman play kube deploy/contextloom.yml
 ```
+
+The manifest pulls `ghcr.io/marcosousapoza/contextloom:latest`. Version releases are also
+published with semantic-version tags, which are preferable for stable production
+deployments. Change the image tag in `deploy/contextloom.yml` to pin a release. After the
+first workflow publish, set the package visibility to public in GitHub Packages so hosts can
+pull anonymously. Until then, authenticate with `podman login ghcr.io` using a token with
+`read:packages`.
 
 Open <http://localhost:8000>. PostgreSQL shares the pod network but has no host-published
 port. Its named volume, `contextloom-postgres-data`, survives pod recreation.
@@ -164,6 +171,10 @@ uv run pytest
 uv run python -m build
 podman build -t localhost/contextloom:0.1.0 .
 ```
+
+GitHub Actions builds the `Containerfile` for `linux/amd64` and `linux/arm64`. Pushes to
+`main` publish `latest` and commit-SHA tags to GHCR; `v*` Git tags publish semantic-version
+tags. Pull requests build without publishing.
 
 ## License
 

@@ -53,15 +53,15 @@ uv run pytest -q
 uv run python -m build
 ```
 
-Tests intentionally require PostgreSQL; SQLite is not a supported substitute. To exercise
-the production image and Podman manifest, run:
+Tests intentionally require PostgreSQL; SQLite is not a supported substitute. To build the
+production image locally, run:
 
 ```console
-tests/container_smoke.sh
+podman build --tag localhost/contextloom:dev --file Containerfile .
 ```
 
-The smoke script removes any local pod, volume, and Podman secrets named `contextloom` or
-`contextloom-*`. Do not run it against a deployment whose data you need to keep.
+The container workflow validates multi-architecture builds on pull requests and publishes
+images from `main` and version tags to GitHub Container Registry.
 
 ## Migrations
 

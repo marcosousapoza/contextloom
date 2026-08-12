@@ -1,7 +1,6 @@
 #!/bin/sh
 set -eu
 
-IMAGE="localhost/contextloom:0.1.0"
 POD="contextloom"
 SECRETS_FILE="deploy/contextloom.secrets.env"
 
@@ -33,7 +32,6 @@ create_secret contextloom-secret-key CONTEXTLOOM_SECRET_KEY "$secret_key"
 create_secret contextloom-postgres-password POSTGRES_PASSWORD "$database_password"
 create_secret contextloom-database-url CONTEXTLOOM_DATABASE_URL "$database_url"
 podman volume exists contextloom-postgres-data || podman volume create contextloom-postgres-data >/dev/null
-podman build --tag "$IMAGE" --file Containerfile .
 podman play kube deploy/contextloom.yml
 
 printf '%s\n' "Waiting for PostgreSQL..."

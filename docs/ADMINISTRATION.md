@@ -55,3 +55,16 @@ it prevents the helper from recreating matching Podman secrets. Rotating
 
 After changing deployment secrets, recreate the pod and run `/ready` checks before routing
 traffic to it.
+
+## Container Images
+
+Published images are available at `ghcr.io/marcosousapoza/contextloom`. The `latest` tag
+tracks `main`; semantic-version tags identify releases and commit-SHA tags identify exact
+builds. Production deployments should pin a semantic-version or SHA tag in
+`deploy/contextloom.yml`, then use `podman play kube --replace deploy/contextloom.yml` to
+apply the update before running migrations with the target image.
+
+GitHub Container Registry creates a new package as private by default. A repository owner
+must change the package visibility to public once if anonymous deployment pulls are desired.
+For a private package, run `podman login ghcr.io` with a personal access token carrying the
+`read:packages` scope on each deployment host.
