@@ -66,6 +66,8 @@ def test_remote_manifest_uses_start_and_external_secret():
     assert "secretKeyRef:" in manifest
     assert "name: contextloom-secret-key" in manifest
     assert "kind: Secret" not in manifest
+    assert "httpGet:" in manifest
+    assert "apt-get install --yes --no-install-recommends curl" in Path("Containerfile").read_text()
 
 
 def test_plaintext_secret_file_and_setup_helper_are_absent():

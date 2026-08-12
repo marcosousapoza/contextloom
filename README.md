@@ -35,7 +35,7 @@ podman secret exists contextloom-secret-key || (key="$(openssl rand -hex 32)" &&
 Then deploy directly from the public manifest:
 
 ```console
-podman kube play --replace https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.1.0/deploy/contextloom.yml
+podman kube play --replace https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.1.1/deploy/contextloom.yml
 ```
 
 Podman stores the serialized Kubernetes Secret separately from the image and source tree.
@@ -63,7 +63,7 @@ For a checked-out manifest, the equivalent deployment command is:
 podman kube play --replace deploy/contextloom.yml
 ```
 
-The release manifest pulls `ghcr.io/marcosousapoza/contextloom:0.1.0`. The same release image
+The release manifest pulls `ghcr.io/marcosousapoza/contextloom:0.1.1`. The same release image
 is also published as `0.1` and `latest`; exact versions are preferable for reproducible
 deployments. The public package can be pulled anonymously.
 
@@ -195,7 +195,7 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pytest
 uv run python -m build
-podman build -t localhost/contextloom:0.1.0 .
+podman build -t localhost/contextloom:0.1.1 .
 ```
 
 GitHub Actions builds the `Containerfile` for `linux/amd64` and `linux/arm64` on pull

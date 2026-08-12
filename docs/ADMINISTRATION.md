@@ -38,7 +38,7 @@ the versioned manifest in the user Quadlet directory:
 ```console
 mkdir -p ~/.config/containers/systemd
 curl --fail --location --output ~/.config/containers/systemd/contextloom.yml \
-  https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.1.0/deploy/contextloom.yml
+  https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.1.1/deploy/contextloom.yml
 ```
 
 Create `~/.config/containers/systemd/contextloom.kube` with:
@@ -114,7 +114,7 @@ Rotate the secret deliberately with:
 
 ```console
 (key="$(openssl rand -hex 32)" && printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: contextloom-secret-key\nstringData:\n  CONTEXTLOOM_SECRET_KEY: %s\n' "$key" | podman secret create --replace contextloom-secret-key -)
-podman kube play --replace https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.1.0/deploy/contextloom.yml
+podman kube play --replace https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.1.1/deploy/contextloom.yml
 ```
 
 Replacing the Podman secret does not alter already-created containers, so pod replacement is
@@ -134,7 +134,7 @@ apply an update. The target image applies migrations before starting the server.
 
 To publish a release, update the version in `pyproject.toml` and the image tag in
 `deploy/contextloom.yml`, merge the tested changes into `main`, then create and push the
-matching tag, such as `v0.1.0`. The container workflow rejects malformed tags and tags that
+matching tag, such as `v0.1.1`. The container workflow rejects malformed tags and tags that
 do not match the package or manifest version.
 
 The package is public and deployment hosts can pull it without registry credentials.
