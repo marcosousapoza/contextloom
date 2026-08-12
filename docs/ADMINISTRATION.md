@@ -29,6 +29,51 @@ available; administrators are the only account creators.
 Use readiness for traffic routing and deployment checks. A healthy but unready instance
 must not receive user or MCP traffic.
 
+## Rootless Systemd
+
+`restartPolicy: Always` handles container exits but does not attach a direct
+`podman kube play` deployment to host startup. To construct a rootless Quadlet, first place
+the versioned manifest in the user Quadlet directory:
+
+```console
+mkdir -p ~/.config/containers/systemd
+curl --fail --location --output ~/.config/containers/systemd/contextloom.yml \
+  https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.1.0/deploy/contextloom.yml
+```
+
+Create `~/.config/containers/systemd/contextloom.kube` with:
+
+```ini
+[Unit]
+Description=ContextLoom
+
+[Kube]
+Yaml=contextloom.yml
+SetWorkingDirectory=yaml
+ExitCodePropagation=any
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
+```
+
+Reload and start the generated service:
+
+```console
+systemctl --user daemon-reload
+systemctl --user start contextloom.service
+```
+
+The `[Install]` section starts it with the user systemd `default.target`; generated Quadlet
+services are not enabled with `systemctl enable`. To start before login and remain running
+after logout, an administrator must enable lingering once with
+`sudo loginctl enable-linger "$USER"`. Stop any directly played `contextloom` pod before
+starting the service to avoid a name and port conflict.
+
 ## PostgreSQL Authentication
 
 The default single-pod deployment uses PostgreSQL trust authentication and does not publish
