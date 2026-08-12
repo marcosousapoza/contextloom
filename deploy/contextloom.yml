@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: contextloom-postgres-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: contextloom
+  labels:
+    app: contextloom
+  annotations:
+    io.podman.annotations.autoremove/contextloom: "FALSE"
+spec:
+  restartPolicy: Always
+  containers:
+    - name: contextloom
+      image: localhost/contextloom:0.1.0
+      imagePullPolicy: Never
+      env:
+        - name: CONTEXTLOOM_DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: contextloom-database-url
+              key: CONTEXTLOOM_DATABASE_URL
+        - name: CONTEXTLOOM_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: contextloom-secret-key
+              key: CONTEXTLOOM_SECRET_KEY
+        - name: CONTEXTLOOM_ALLOWED_HOSTS
+          value: "localhost,127.0.0.1"
+        - name: CONTEXTLOOM_MCP_ALLOWED_HOSTS
+          value: "localhost,localhost:*,127.0.0.1,127.0.0.1:*"
+        - name: CONTEXTLOOM_MCP_ALLOWED_ORIGINS
+          value: "http://localhost:*,http://127.0.0.1:*"
+        - name: CONTEXTLOOM_PUBLIC_URL
+          value: "http://localhost:8000"
+      ports:
+        - name: http
+          containerPort: 8000
+          hostPort: 8000
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 8000
+        initialDelaySeconds: 10
+        periodSeconds: 30
+      readinessProbe:
+        httpGet:
+          path: /ready
+          port: 8000
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      volumeMounts:
+        - name: app-tmp
+          mountPath: /tmp
+    - name: postgres
+      image: docker.io/library/postgres:17.6-bookworm
+      env:
+        - name: POSTGRES_DB
+          value: contextloom
+        - name: POSTGRES_USER
+          value: contextloom
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: contextloom-postgres-password
+              key: POSTGRES_PASSWORD
+      volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+      livenessProbe:
+        exec:
+          command: ["pg_isready", "-U", "contextloom", "-d", "contextloom"]
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      readinessProbe:
+        exec:
+          command: ["pg_isready", "-U", "contextloom", "-d", "contextloom"]
+        initialDelaySeconds: 2
+        periodSeconds: 5
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+          add: ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
+  volumes:
+    - name: postgres-data
+      persistentVolumeClaim:
+        claimName: contextloom-postgres-data
+    - name: app-tmp
+      emptyDir: {}

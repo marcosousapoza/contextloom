@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">Knowledge workspace</p><h1>Your context</h1></div><div class="actions"><a class="button" href="{% url 'knowledge:category_create' %}">New category</a><a class="primary button" href="{% url 'knowledge:memory_create' %}">New memory</a></div></div>
+<div class="workspace">
+  <aside class="category-tree"><h2>Categories</h2>
+    {% for category in categories %}<div class="category-row" style="--depth: {% if category.parent %}1{% else %}0{% endif %}"><a href="#category-{{ category.id }}">{{ category.name }}</a><span>{{ category.memories.count }}</span></div>{% empty %}<p class="empty">Create a category to begin.</p>{% endfor %}
+  </aside>
+  <section class="memory-stream">
+    {% for category in categories %}<section class="category-section" id="category-{{ category.id }}"><header><div><p class="eyebrow">{% if category.parent %}{{ category.parent.name }} /{% else %}Category{% endif %}</p><h2>{{ category.name }}</h2>{% if category.description %}<p>{{ category.description }}</p>{% endif %}</div><div class="row-actions"><a href="{% url 'knowledge:memory_create' %}?category={{ category.id }}">Add memory</a><a href="{% url 'knowledge:category_edit' category.id %}">Edit</a><form method="post" action="{% url 'knowledge:category_archive' category.id %}" class="inline-form">{% csrf_token %}<button class="danger-link">Archive</button></form></div></header>
+      <div class="memory-grid">{% for memory in category.memories.all %}<article class="memory-card"><span class="priority">Priority {{ memory.priority }}</span><p>{{ memory.content|linebreaksbr }}</p><footer><time>{{ memory.updated_at|date:"M j, Y" }}</time><span><a href="{% url 'knowledge:memory_edit' memory.id %}">Edit</a><form method="post" action="{% url 'knowledge:memory_delete' memory.id %}" class="inline-form">{% csrf_token %}<button class="danger-link">Delete</button></form></span></footer></article>{% empty %}<p class="empty">No memories in this category.</p>{% endfor %}</div>
+    </section>{% empty %}<section class="blank-state"><p class="eyebrow">An empty loom</p><h2>Start with a category</h2><p>Categories create a durable structure for related knowledge.</p><a class="primary button" href="{% url 'knowledge:category_create' %}">Create category</a></section>{% endfor %}
+  </section>
+</div>
+{% endblock %}

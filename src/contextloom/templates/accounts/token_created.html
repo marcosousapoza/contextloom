@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Token created | ContextLoom{% endblock %}
+{% block content %}<section class="auth-card wide"><p class="eyebrow">Token created</p><h1>Store this value now</h1><p>It cannot be displayed again.</p><pre class="token-value">{{ raw_token }}</pre><a class="button" href="{% url 'accounts:settings' %}">Return to settings</a></section>{% endblock %}

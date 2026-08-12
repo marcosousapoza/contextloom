@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Log in | ContextLoom{% endblock %}
+{% block content %}
+<section class="auth-card">
+  <p class="eyebrow">Your knowledge, woven together</p>
+  <h1>Welcome back</h1>
+  <form method="post" class="stacked-form">
+    {% csrf_token %}{{ form.as_p }}
+    <button class="primary">Log in</button>
+  </form>
+  {% if registration_enabled %}<p><a href="{% url 'accounts:register' %}">Create an account</a></p>{% endif %}
+</section>
+{% endblock %}

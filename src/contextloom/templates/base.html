@@ -1,0 +1,32 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ContextLoom{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'contextloom.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="{% url 'knowledge:home' %}">Context<span>Loom</span></a>
+    {% if user.is_authenticated %}
+      <nav aria-label="Main navigation">
+        <a href="{% url 'knowledge:home' %}">Knowledge</a>
+        <a href="{% url 'knowledge:archives' %}">Archives</a>
+        <a href="{% url 'knowledge:import' %}">Import</a>
+        <a href="{% url 'accounts:settings' %}">Settings</a>
+        {% if user.is_staff %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
+        <form action="{% url 'accounts:logout' %}" method="post" class="inline-form">
+          {% csrf_token %}<button class="link-button">Log out</button>
+        </form>
+      </nav>
+    {% endif %}
+  </header>
+  <main>
+    {% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer>ContextLoom {{ contextloom_version }}</footer>
+</body>
+</html>

@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "contextloom"
+version = "0.1.0"
+description = "Self-hosted, multi-user categorized knowledge retrieval"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "AGPL-3.0-or-later"
+authors = [{ name = "ContextLoom contributors" }]
+dependencies = [
+  "argon2-cffi>=23.1,<26",
+  "django[argon2]>=5.2,<5.3",
+  "django-environ>=0.12,<0.13",
+  "mcp>=1.13,<2",
+  "psycopg[binary]>=3.2,<4",
+  "uvicorn>=0.35,<1",
+  "whitenoise>=6.9,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2,<2",
+  "pytest>=8.4,<9",
+  "pytest-django>=4.11,<5",
+  "ruff>=0.12,<1",
+]
+
+[project.scripts]
+contextloom = "contextloom.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/contextloom"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "contextloom.config.settings"
+pythonpath = ["src"]
+testpaths = ["tests"]
+filterwarnings = [
+  "error",
+  "ignore:Using `httpx` with `starlette.testclient` is deprecated.*:starlette.exceptions.StarletteDeprecationWarning",
+  "ignore:Field 'lifespan' has an incomplete definition.*:pydantic_settings.exceptions.IncompleteFieldDefinitionWarning",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/contextloom/config/settings.py" = ["F403", "F405"]
+"src/**/migrations/*.py" = ["E501"]
+"src/contextloom/cli.py" = ["S104"]
+"src/contextloom/accounts/management/commands/serve.py" = ["S104"]
+"tests/**" = ["S105", "S106"]

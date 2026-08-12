@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Settings | ContextLoom{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">Account</p><h1>Settings</h1></div>
+  <a class="button" href="{% url 'knowledge:export' %}">Export my data</a></div>
+<div class="settings-grid">
+  <section class="panel"><h2>Profile</h2><form method="post" class="stacked-form">{% csrf_token %}{{ profile_form.as_p }}<button name="save_profile" class="primary">Save profile</button></form></section>
+  <section class="panel"><h2>Personal access tokens</h2><p class="muted">Tokens authenticate MCP clients at <code>/mcp</code>. The value is shown once.</p>
+    <form method="post" action="{% url 'accounts:create_token' %}" class="stacked-form">{% csrf_token %}{{ token_form.as_p }}<button class="primary">Create token</button></form>
+    <div class="token-list">{% for token in tokens %}<article><strong>{{ token.name }}</strong><br><code>{{ token.prefix }}...</code> · {{ token.scopes|join:", " }}
+      {% if token.revoked_at %}<span class="status">Revoked</span>{% else %}<form method="post" action="{% url 'accounts:revoke_token' token.id %}" class="inline-form">{% csrf_token %}<button class="danger-link">Revoke</button></form>{% endif %}</article>{% empty %}<p>No tokens yet.</p>{% endfor %}</div>
+  </section>
+</div>
+{% endblock %}

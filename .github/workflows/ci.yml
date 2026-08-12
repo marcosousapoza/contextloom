@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-and-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17.6-bookworm
+        env:
+          POSTGRES_DB: contextloom
+          POSTGRES_USER: contextloom
+          POSTGRES_PASSWORD: contextloom
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U contextloom -d contextloom"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CONTEXTLOOM_DATABASE_URL: postgresql://contextloom:contextloom@127.0.0.1:5432/contextloom
+      CONTEXTLOOM_SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.31"
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-extras
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Check Django configuration and migrations
+        run: |
+          uv run python manage.py check
+          uv run python manage.py makemigrations --check --dry-run
+
+      - name: Run PostgreSQL tests
+        run: uv run pytest -q
+
+      - name: Build package
+        run: uv run python -m build
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: contextloom-distributions
+          path: dist/*
+          if-no-files-found: error

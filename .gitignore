@@ -1,0 +1,11 @@
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+deploy/*.local.yml
+deploy/*.env
+deploy/contextloom.secrets.env
+*.py[cod]
+__pycache__/
+.yolo.json
+prompt.md
