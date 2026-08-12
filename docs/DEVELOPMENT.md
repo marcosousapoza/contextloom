@@ -39,6 +39,10 @@ uv run contextloom serve
 
 The standard `uv run python manage.py <command>` interface remains available.
 
+`uv run contextloom create-admin` defaults to `admin` / `admin` for the zero-input deployment
+flow and marks that password as temporary. Use explicit command arguments for other local
+administrators. Assigned passwords must always be replaced on first login.
+
 ## Quality Gate
 
 Before opening a pull request, run:

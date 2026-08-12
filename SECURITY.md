@@ -18,6 +18,12 @@ queries, bounded imports, and a non-root container. Operators remain responsible
 reverse-proxy security, host updates, secret management, PostgreSQL access and backups,
 network filtering, monitoring, and timely ContextLoom upgrades.
 
+The zero-input bootstrap account uses `admin` / `admin` and is forced through a password
+change before any application or Admin access. The default deployment binds HTTP to
+`127.0.0.1`; change the password before altering that binding or exposing the service. The
+default PostgreSQL trust mode is acceptable only while port 5432 remains unpublished inside
+the single-application pod.
+
 Rotate `CONTEXTLOOM_SECRET_KEY` only with care: rotation invalidates existing browser
 sessions and all personal access tokens because it participates in token hashing. Never send
 database URLs, password values, secret keys, token values, exports, or database dumps in a

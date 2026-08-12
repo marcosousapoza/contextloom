@@ -25,10 +25,7 @@ spec:
       imagePullPolicy: Always
       env:
         - name: CONTEXTLOOM_DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: contextloom-database-url
-              key: CONTEXTLOOM_DATABASE_URL
+          value: "postgresql://contextloom@127.0.0.1:5432/contextloom"
         - name: CONTEXTLOOM_SECRET_KEY
           valueFrom:
             secretKeyRef:
@@ -46,6 +43,7 @@ spec:
         - name: http
           containerPort: 8000
           hostPort: 8000
+          hostIP: 127.0.0.1
       livenessProbe:
         httpGet:
           path: /health
@@ -73,11 +71,8 @@ spec:
           value: contextloom
         - name: POSTGRES_USER
           value: contextloom
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: contextloom-postgres-password
-              key: POSTGRES_PASSWORD
+        - name: POSTGRES_HOST_AUTH_METHOD
+          value: trust
       volumeMounts:
         - name: postgres-data
           mountPath: /var/lib/postgresql/data

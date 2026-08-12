@@ -1,6 +1,7 @@
 import pytest
 from django.contrib import admin
 from django.contrib.auth.models import Permission
+from django.core.management import call_command
 from django.test import Client
 from django.urls import reverse
 
@@ -106,3 +107,79 @@ def test_superuser_can_manage_accounts_but_not_content(client):
     assert "Categories" not in body
     assert "Memories" not in body
     assert "Archives" not in body
+
+
+@pytest.mark.django_db
+def test_bootstrap_admin_must_change_default_password(client):
+    call_command("create_initial_admin")
+    response = client.post(reverse("accounts:login"), {"username": "admin", "password": "admin"})
+    assert response.status_code == 302
+    assert response.url == reverse("accounts:password_change")
+    assert client.get(reverse("knowledge:home")).url == reverse("accounts:password_change")
+    assert client.get(reverse("admin:index")).url == reverse("accounts:password_change")
+
+    response = client.post(
+        reverse("accounts:password_change"),
+        {
+            "old_password": "admin",
+            "new_password1": "a-new-long-random-password-42",
+            "new_password2": "a-new-long-random-password-42",
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == reverse("knowledge:home")
+    user = client.session.get("_auth_user_id")
+    assert user
+    from contextloom.accounts.models import User
+
+    administrator = User.objects.get(pk=user)
+    assert administrator.password_change_required is False
+    assert administrator.check_password("a-new-long-random-password-42")
+
+
+@pytest.mark.django_db
+def test_bootstrap_admin_creation_is_idempotent(capsys):
+    call_command("create_initial_admin")
+    call_command("create_initial_admin")
+    assert "Administrator already exists" in capsys.readouterr().out
+
+
+@pytest.mark.django_db
+def test_admin_created_user_requires_password_change(client):
+    from contextloom.accounts.admin import ContextLoomUserAdmin
+    from contextloom.accounts.models import User
+
+    administrator = User.objects.create_superuser(
+        username="admin", email="admin@example.com", password="administrator-password"
+    )
+    request = type("Request", (), {"user": administrator})()
+    account = User(username="new-user", email="new-user@example.com")
+    account.set_password("assigned-password")
+    ContextLoomUserAdmin(User, admin.site).save_model(request, account, form=None, change=False)
+    assert account.password_change_required is True
+
+    response = client.post(
+        reverse("accounts:login"),
+        {"username": account.username, "password": "assigned-password"},
+    )
+    assert response.url == reverse("accounts:password_change")
+
+
+@pytest.mark.django_db
+def test_self_registered_user_does_not_require_password_change(client):
+    settings = ApplicationSettings.load()
+    settings.registration_enabled = True
+    settings.save()
+    response = client.post(
+        reverse("accounts:register"),
+        {
+            "username": "registered",
+            "email": "registered@example.com",
+            "password1": "self-selected-password-42",
+            "password2": "self-selected-password-42",
+        },
+    )
+    assert response.status_code == 302
+    from contextloom.accounts.models import User
+
+    assert User.objects.get(username="registered").password_change_required is False

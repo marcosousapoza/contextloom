@@ -11,6 +11,7 @@ from django.utils import timezone
 
 class User(AbstractUser):
     email = models.EmailField("email address", unique=True)
+    password_change_required = models.BooleanField(default=False)
 
     class Meta:
         constraints = [

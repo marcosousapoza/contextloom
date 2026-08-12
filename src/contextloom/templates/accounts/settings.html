@@ -2,7 +2,7 @@
 {% block title %}Settings | ContextLoom{% endblock %}
 {% block content %}
 <div class="page-heading"><div><p class="eyebrow">Account</p><h1>Settings</h1></div>
-  <a class="button" href="{% url 'knowledge:export' %}">Export my data</a></div>
+  <div class="actions"><a class="button" href="{% url 'accounts:password_change' %}">Change password</a><a class="button" href="{% url 'knowledge:export' %}">Export my data</a></div></div>
 <div class="settings-grid">
   <section class="panel"><h2>Profile</h2><form method="post" class="stacked-form">{% csrf_token %}{{ profile_form.as_p }}<button name="save_profile" class="primary">Save profile</button></form></section>
   <section class="panel"><h2>Personal access tokens</h2><p class="muted">Tokens authenticate MCP clients at <code>/mcp</code>. The value is shown once.</p>

@@ -22,6 +22,11 @@ class ContextLoomUserAdmin(UserAdmin):
     list_display = ("username", "email", "is_active", "is_staff", "is_superuser")
     list_filter = ("is_active", "is_staff", "is_superuser")
 
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.password_change_required = True
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(ApplicationSettings)
 class ApplicationSettingsAdmin(admin.ModelAdmin):

@@ -25,26 +25,21 @@ production operators should place their own TLS-terminating reverse proxy in fro
 
 ## Podman Deployment
 
-The helper generates Podman secrets, creates persistent storage, pulls the published image,
-starts the pod, and runs migrations. Generated source values are retained in the ignored,
-mode-0600 `deploy/contextloom.secrets.env`; protect that file because it is required to
-recreate matching secrets:
+Clone and install with one command:
 
 ```console
-chmod +x deploy/setup.sh
-deploy/setup.sh
+git clone https://github.com/marcosousapoza/contextloom.git && cd contextloom && deploy/setup.sh
 ```
 
-To create the initial administrator during setup, supply values without writing them to a
-file:
+The helper generates the Django secret, creates persistent storage, pulls the published
+image, starts the pod, runs migrations, and creates the initial administrator. The generated
+secret is retained in the ignored, mode-0600 `deploy/contextloom.secrets.env`; protect that
+file because it is required to recreate matching Podman secrets.
 
-```console
-CONTEXTLOOM_CREATE_ADMIN=1 \
-CONTEXTLOOM_ADMIN_USERNAME=admin \
-CONTEXTLOOM_ADMIN_EMAIL=admin@example.com \
-CONTEXTLOOM_ADMIN_PASSWORD='use-a-long-random-password' \
-deploy/setup.sh
-```
+Sign in at <http://localhost:8000> with username `admin` and password `admin`. ContextLoom
+immediately requires replacing that password before any other page or Admin function can be
+used. Port 8000 binds to localhost by default; do not expose the initial credentials to an
+untrusted network.
 
 After secrets, the image, and storage exist, the deployment itself is always:
 
@@ -64,21 +59,34 @@ To create an administrator later:
 
 ```console
 podman exec \
-  --env CONTEXTLOOM_ADMIN_USERNAME=admin \
-  --env CONTEXTLOOM_ADMIN_EMAIL=admin@example.com \
-  --env CONTEXTLOOM_ADMIN_PASSWORD='use-a-long-random-password' \
-  contextloom-contextloom contextloom create-admin
+  contextloom-contextloom contextloom create-admin \
+  --username another-admin \
+  --email another-admin@example.com \
+  --password 'an-assigned-password'
 ```
+
+The account must replace the assigned password after signing in.
+
+## Database Authentication
+
+PostgreSQL is unpublished and accepts trusted connections only from within the pod network by
+default. This removes a credential that would otherwise be automatically generated and
+available to the application container anyway. Never publish PostgreSQL port 5432.
+
+Operators who require password authentication can replace `POSTGRES_HOST_AUTH_METHOD=trust`
+with `POSTGRES_PASSWORD` and include that password in `CONTEXTLOOM_DATABASE_URL` in
+`deploy/contextloom.yml`. Apply this choice before PostgreSQL initializes a new data volume;
+authentication settings are persisted with the database cluster.
 
 ## Reverse Proxy
 
 Set `CONTEXTLOOM_PUBLIC_URL`, `CONTEXTLOOM_ALLOWED_HOSTS`,
 `CONTEXTLOOM_CSRF_TRUSTED_ORIGINS`, `CONTEXTLOOM_MCP_ALLOWED_HOSTS`, and
 `CONTEXTLOOM_MCP_ALLOWED_ORIGINS` to the public HTTPS origin. Set
-`CONTEXTLOOM_SECURE_COOKIES=true`. The proxy must preserve `Host`, set
-`X-Forwarded-Proto: https`, pass the `Authorization` header, support long-lived HTTP
-responses, and proxy `/mcp` without changing its path. Restrict trusted forwarded-header
-sources with `CONTEXTLOOM_FORWARDED_ALLOW_IPS`.
+`CONTEXTLOOM_SECURE_COOKIES=true`. The proxy can connect to `127.0.0.1:8000` and must
+preserve `Host`, set `X-Forwarded-Proto: https`, pass the `Authorization` header, support
+long-lived HTTP responses, and proxy `/mcp` without changing its path. Restrict trusted
+forwarded-header sources with `CONTEXTLOOM_FORWARDED_ALLOW_IPS`.
 
 ## MCP
 
@@ -143,7 +151,6 @@ Stop application writes before a destructive restore and follow PostgreSQL's doc
 | `CONTEXTLOOM_MCP_ALLOWED_ORIGINS` | local origins | MCP origin allowlist |
 | `CONTEXTLOOM_LOG_LEVEL` | `INFO` | stdout/stderr logging level |
 | `CONTEXTLOOM_FORWARDED_ALLOW_IPS` | `127.0.0.1` | Trusted proxy addresses |
-| `CONTEXTLOOM_ADMIN_*` | empty | Initial-admin command inputs |
 
 Resource-limit settings are documented in `deploy/contextloom.env.example` and the Django
 settings module.

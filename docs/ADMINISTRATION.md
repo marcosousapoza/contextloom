@@ -10,16 +10,19 @@ Use `is_active` to enable or disable an account, `is_staff` to permit Admin acce
 `is_superuser` for full administrative privileges. ContextLoom does not define parallel
 roles, teams, or organizations.
 
-Create the first administrator with:
+The setup command creates the first administrator automatically:
 
 ```console
-CONTEXTLOOM_ADMIN_USERNAME=admin \
-CONTEXTLOOM_ADMIN_EMAIL=admin@example.com \
-CONTEXTLOOM_ADMIN_PASSWORD='a-long-random-password' \
-contextloom create-admin
+deploy/setup.sh
 ```
 
-The command is idempotent by username.
+Sign in as `admin` with password `admin`. ContextLoom blocks all other browser pages until the
+password is replaced. The command is idempotent by username.
+
+Accounts created through Django Admin are also marked for a mandatory password change. The
+administrator assigns the initial password in the account creation form; the user signs in
+with it once and must replace it before using ContextLoom. Self-registered users are exempt
+because they choose their own password.
 
 ## Registration
 
@@ -33,6 +36,23 @@ disable it. The database setting takes precedence over the initial environment d
 
 Use readiness for traffic routing and deployment checks. A healthy but unready instance
 must not receive user or MCP traffic.
+
+## PostgreSQL Authentication
+
+The default single-pod deployment uses PostgreSQL trust authentication and does not publish
+port 5432. Only containers sharing the pod network namespace can reach that listener. The
+application's database compromise boundary is therefore the same with or without an embedded
+password, because the application must possess any configured password.
+
+For policy-driven password authentication, edit `deploy/contextloom.yml` before first startup:
+
+1. Replace `POSTGRES_HOST_AUTH_METHOD=trust` with `POSTGRES_PASSWORD` sourced from your secret
+   management system.
+2. Put the same password in `CONTEXTLOOM_DATABASE_URL`.
+3. Keep port 5432 unpublished.
+
+Changing these environment values does not rewrite authentication for an existing PostgreSQL
+data volume; follow PostgreSQL's `pg_hba.conf` procedures when converting an existing cluster.
 
 ## Backups
 
@@ -49,8 +69,8 @@ tokens, permissions, or complete infrastructure state.
 
 ## Secret Rotation
 
-Protect `deploy/contextloom.secrets.env` with the same care as database credentials. Losing
-it prevents the helper from recreating matching Podman secrets. Rotating
+Protect `deploy/contextloom.secrets.env` with the same care as an application credential.
+Losing it prevents the helper from recreating matching Podman secrets. Rotating
 `CONTEXTLOOM_SECRET_KEY` invalidates existing sessions and all personal access tokens.
 
 After changing deployment secrets, recreate the pod and run `/ready` checks before routing

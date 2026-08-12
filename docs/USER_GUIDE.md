@@ -11,6 +11,10 @@ address and password. Public registration appears only when an administrator ena
 If repeated login attempts fail, ContextLoom temporarily throttles further attempts. A
 disabled account cannot sign in or use existing personal access tokens.
 
+If an administrator created your account or assigned its initial password, ContextLoom opens
+the password-change page immediately after login. No other page is available until you choose
+a private password. You can change it again later from **Settings**.
+
 ## Categories
 
 Select **New category** to create a top-level category or choose a parent to nest it. Names

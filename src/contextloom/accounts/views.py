@@ -1,9 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -37,6 +38,25 @@ class ThrottledLoginView(LoginView):
     def form_valid(self, form):
         clear_login_failures(self.throttle_key)
         return super().form_valid(form)
+
+    def get_success_url(self):
+        if self.request.user.password_change_required:
+            return reverse("accounts:password_change")
+        return super().get_success_url()
+
+
+class RequiredPasswordChangeView(PasswordChangeView):
+    template_name = "accounts/password_change.html"
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        self.request.user.password_change_required = False
+        self.request.user.save(update_fields=["password_change_required"])
+        messages.success(self.request, "Password changed. Your account is ready to use.")
+        return response
+
+    def get_success_url(self):
+        return reverse("knowledge:home")
 
 
 def register(request):
