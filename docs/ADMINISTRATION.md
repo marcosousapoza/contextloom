@@ -64,7 +64,4 @@ builds. Production deployments should pin a semantic-version or SHA tag in
 `deploy/contextloom.yml`, then use `podman play kube --replace deploy/contextloom.yml` to
 apply the update before running migrations with the target image.
 
-GitHub Container Registry creates a new package as private by default. A repository owner
-must change the package visibility to public once if anonymous deployment pulls are desired.
-For a private package, run `podman login ghcr.io` with a personal access token carrying the
-`read:packages` scope on each deployment host.
+The package is public and deployment hosts can pull it without registry credentials.

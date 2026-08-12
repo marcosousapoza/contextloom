@@ -54,10 +54,8 @@ podman play kube deploy/contextloom.yml
 
 The manifest pulls `ghcr.io/marcosousapoza/contextloom:latest`. Version releases are also
 published with semantic-version tags, which are preferable for stable production
-deployments. Change the image tag in `deploy/contextloom.yml` to pin a release. After the
-first workflow publish, set the package visibility to public in GitHub Packages so hosts can
-pull anonymously. Until then, authenticate with `podman login ghcr.io` using a token with
-`read:packages`.
+deployments. Change the image tag in `deploy/contextloom.yml` to pin a release. The public
+package can be pulled anonymously.
 
 Open <http://localhost:8000>. PostgreSQL shares the pod network but has no host-published
 port. Its named volume, `contextloom-postgres-data`, survives pod recreation.
