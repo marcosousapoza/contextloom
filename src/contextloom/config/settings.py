@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "oauth2_provider",
 ]
 
 MIDDLEWARE = [
@@ -122,6 +123,39 @@ CONTEXTLOOM_IMPORT_MAX_FIELD_LENGTH = env.int(
     "CONTEXTLOOM_IMPORT_MAX_FIELD_LENGTH", default=1_000_000
 )
 CONTEXTLOOM_IMPORT_MAX_DEPTH = env.int("CONTEXTLOOM_IMPORT_MAX_DEPTH", default=50)
+
+OAUTH2_PROVIDER = {
+    "SCOPES": {
+        "categories:read": "Read categories",
+        "categories:write": "Write categories",
+        "memories:read": "Read memories",
+        "memories:write": "Write memories",
+    },
+    "DEFAULT_SCOPES": [
+        "categories:read",
+        "categories:write",
+        "memories:read",
+        "memories:write",
+    ],
+    "PKCE_REQUIRED": True,
+    "COMPLIANT_BCP_RFC9700_PKCE_METHOD": True,
+    "COMPLIANT_BCP_RFC9700_IMPLICIT_GRANT": True,
+    "COMPLIANT_BCP_RFC9700_PASSWORD_GRANT": True,
+    "COMPLIANT_BCP_RFC9700_AUTHZ_RESPONSE_ISS": True,
+    "ROTATE_REFRESH_TOKEN": True,
+    "REFRESH_TOKEN_REUSE_PROTECTION": True,
+    "REFRESH_TOKEN_EXPIRE_SECONDS": 86400 * 30,
+    "ACCESS_TOKEN_EXPIRE_SECONDS": 3600,
+    "ALLOWED_REDIRECT_URI_SCHEMES": ["https", "http"],
+    "ALLOW_LOCALHOST_LOOPBACK": True,
+    "ALLOW_URI_WILDCARDS": False,
+    "DCR_ENABLED": True,
+    "DCR_REGISTRATION_PERMISSION_CLASSES": ("oauth2_provider.dcr.AllowAllDCRPermission",),
+    "CIMD_ENABLED": True,
+    "OIDC_ISS_ENDPOINT": env("CONTEXTLOOM_PUBLIC_URL", default="http://localhost:8000").rstrip("/"),
+    "OAUTH2_PROTECTED_RESOURCE_IDENTIFIER": f"{env('CONTEXTLOOM_PUBLIC_URL', default='http://localhost:8000').rstrip('/')}/mcp",
+    "OAUTH2_PROTECTED_RESOURCE_AUTHORIZATION_SERVERS": [],
+}
 
 LOGGING = {
     "version": 1,

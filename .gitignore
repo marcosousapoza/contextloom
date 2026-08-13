@@ -5,6 +5,7 @@ dist/
 deploy/*.local.yml
 deploy/*.env
 *.py[cod]
+*.db
 __pycache__/
 .yolo.json
 prompt.md

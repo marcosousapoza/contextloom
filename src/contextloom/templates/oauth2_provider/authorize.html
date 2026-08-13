@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Authorize {{ application.name }} - ContextLoom{% endblock %}
+
+{% block content %}
+<div class="block-center">
+  {% if not error %}
+    <h2>Authorize {{ application.name }}?</h2>
+
+    <p>
+      <strong>Client ID:</strong> <code>{{ application.client_id }}</code>
+    </p>
+
+    {% if application.user %}
+      <p><strong>Owner:</strong> {{ application.user.username }}</p>
+    {% endif %}
+
+    <p>This application is requesting access to your ContextLoom account.</p>
+
+    <h3>Requested permissions</h3>
+    <ul>
+      {% for scope in scopes_descriptions %}
+        <li>{{ scope }}</li>
+      {% endfor %}
+    </ul>
+
+    <form id="authorizationForm" method="post">
+      {% csrf_token %}
+
+      {% for field in form %}
+        {% if field.is_hidden %}
+          {{ field }}
+        {% endif %}
+      {% endfor %}
+
+      {{ form.errors }}
+      {{ form.non_field_errors }}
+
+      <div class="form-actions" style="margin-top: 2rem;">
+        <button type="submit" class="btn btn-large" name="allow" value="">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-large btn-primary" name="allow" value="Authorize">
+          Authorize
+        </button>
+      </div>
+    </form>
+
+  {% else %}
+    <h2>Error: {{ error.error }}</h2>
+    <p>{{ error.description }}</p>
+  {% endif %}
+</div>
+{% endblock %}

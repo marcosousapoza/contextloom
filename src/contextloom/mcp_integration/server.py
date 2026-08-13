@@ -1,3 +1,5 @@
+import hashlib
+
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -20,17 +22,63 @@ from contextloom.knowledge.services import (
 )
 
 
-class PersonalTokenVerifier:
+class CombinedTokenVerifier:
+    """
+    Accept either ContextLoom PATs (clm_...) or OAuth2 access tokens.
+    PATs are checked first to preserve backward compatibility.
+    OAuth tokens are validated by checksum and must have the /mcp resource.
+    """
+
     async def verify_token(self, raw_token):
-        token = await _run_sync(lambda: authenticate_token(raw_token))
-        if token is None:
+        if not raw_token:
             return None
+
+        # Try PAT authentication first
+        if raw_token.startswith("clm_"):
+            token = await _run_sync(lambda: authenticate_token(raw_token))
+            if token is None:
+                return None
+            return AccessToken(
+                token=token.prefix,
+                client_id=f"contextloom-token-{token.pk}",
+                subject=str(token.owner_id),
+                scopes=token.scopes,
+                expires_at=int(token.expires_at.timestamp()) if token.expires_at else None,
+            )
+
+        # Try OAuth2 access token authentication
+        return await _run_sync(lambda: self._verify_oauth_token(raw_token))
+
+    def _verify_oauth_token(self, raw_token):
+        from oauth2_provider.models import AccessToken as OAuthAccessToken
+
+        token_checksum = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+        oauth_token = (
+            OAuthAccessToken.objects.select_related("application", "user")
+            .filter(token_checksum=token_checksum)
+            .first()
+        )
+
+        if not oauth_token or not oauth_token.is_valid():
+            return None
+
+        # Validate audience/resource: token must be for /mcp
+        resources = oauth_token.resource
+        mcp_resource = f"{settings.CONTEXTLOOM_PUBLIC_URL.rstrip('/')}/mcp"
+        if mcp_resource not in resources:
+            return None
+
+        if not oauth_token.user or not oauth_token.user.is_active:
+            return None
+
         return AccessToken(
-            token=token.prefix,
-            client_id=f"contextloom-token-{token.pk}",
-            subject=str(token.owner_id),
-            scopes=token.scopes,
-            expires_at=int(token.expires_at.timestamp()) if token.expires_at else None,
+            token=oauth_token.token[:12] if oauth_token.token else f"oauth-{oauth_token.pk}",
+            client_id=(
+                oauth_token.application.client_id if oauth_token.application else "oauth-client"
+            ),
+            subject=str(oauth_token.user_id),
+            scopes=oauth_token.scope.split() if oauth_token.scope else [],
+            expires_at=int(oauth_token.expires.timestamp()) if oauth_token.expires else None,
         )
 
 
@@ -45,25 +93,29 @@ async def _run_sync(operation):
     return await sync_to_async(wrapped, thread_sensitive=True)()
 
 
-mcp = FastMCP(
-    "ContextLoom",
-    instructions="Manage the authenticated user's categorized knowledge.",
-    streamable_http_path="/mcp",
-    stateless_http=True,
-    json_response=True,
-    max_request_body_size=1_000_000,
-    token_verifier=PersonalTokenVerifier(),
-    auth=AuthSettings(
-        issuer_url=settings.CONTEXTLOOM_PUBLIC_URL,
-        resource_server_url=f"{settings.CONTEXTLOOM_PUBLIC_URL}/mcp",
-        required_scopes=[],
-    ),
-    transport_security=TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=settings.CONTEXTLOOM_MCP_ALLOWED_HOSTS,
-        allowed_origins=settings.CONTEXTLOOM_MCP_ALLOWED_ORIGINS,
-    ),
-)
+def _create_mcp_server():
+    return FastMCP(
+        "ContextLoom",
+        instructions="Manage the authenticated user's categorized knowledge.",
+        streamable_http_path="/mcp",
+        stateless_http=True,
+        json_response=True,
+        max_request_body_size=1_000_000,
+        token_verifier=CombinedTokenVerifier(),
+        auth=AuthSettings(
+            issuer_url=settings.CONTEXTLOOM_PUBLIC_URL,
+            resource_server_url=f"{settings.CONTEXTLOOM_PUBLIC_URL}/mcp",
+            required_scopes=[],
+        ),
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=settings.CONTEXTLOOM_MCP_ALLOWED_HOSTS,
+            allowed_origins=settings.CONTEXTLOOM_MCP_ALLOWED_ORIGINS,
+        ),
+    )
+
+
+mcp = _create_mcp_server()
 
 
 def _identity(required_scope):
@@ -228,6 +280,22 @@ async def delete_memory(memory_id: int) -> dict:
         return {"deleted": True, "id": memory_id}
 
     return await _run_sync(operation)
+
+
+def create_mcp_application():
+    server = _create_mcp_server()
+    for tool in (
+        list_categories,
+        create_category,
+        update_category,
+        archive_category,
+        list_memories,
+        create_memory,
+        update_memory,
+        delete_memory,
+    ):
+        server.tool()(tool)
+    return server.streamable_http_app()
 
 
 mcp_application = mcp.streamable_http_app()
