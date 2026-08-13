@@ -10,5 +10,11 @@
     <div class="token-list">{% for token in tokens %}<article><strong>{{ token.name }}</strong><br><code>{{ token.prefix }}...</code> · {{ token.scopes|join:", " }}
       {% if token.revoked_at %}<span class="status">Revoked</span>{% else %}<form method="post" action="{% url 'accounts:revoke_token' token.id %}" class="inline-form">{% csrf_token %}<button class="danger-link">Revoke</button></form>{% endif %}</article>{% empty %}<p>No tokens yet.</p>{% endfor %}</div>
   </section>
+  <section class="panel"><h2>Registered OAuth applications</h2><p class="muted">OAuth clients registered under your account.</p>
+    <div class="token-list">{% for app in oauth_applications %}<article><strong>{{ app.name }}</strong><br><code>{{ app.client_id }}</code>
+      <br><small>Created: {{ app.created|date:"Y-m-d H:i" }}</small>
+      <form method="post" action="{% url 'oauth2_provider:delete' app.pk %}" class="inline-form">{% csrf_token %}<button class="danger-link" onclick="return confirm('Delete this OAuth application?')">Delete</button></form>
+    </article>{% empty %}<p>No OAuth applications registered yet.</p>{% endfor %}</div>
+  </section>
 </div>
 {% endblock %}
