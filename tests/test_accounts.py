@@ -36,6 +36,13 @@ def test_public_registration_does_not_exist(client):
 
 
 @pytest.mark.django_db
+def test_authenticated_user_can_open_settings(client, user):
+    client.force_login(user)
+    response = client.get(reverse("accounts:settings"))
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
 def test_login_throttling(user, settings):
     settings.CONTEXTLOOM_LOGIN_ATTEMPTS = 2
     client = Client()
