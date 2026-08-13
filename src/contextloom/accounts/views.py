@@ -73,7 +73,7 @@ def settings_view(request):
             "profile_form": profile_form,
             "token_form": token_form,
             "tokens": request.user.personalaccesstoken_set.all(),
-            "oauth_applications": request.user.oauth2_provider_application_set.all(),
+            "oauth_applications": request.user.oauth2_provider_application.all(),
         },
     )
 
