@@ -121,6 +121,13 @@ memory scopes. Configure an MCP client for Streamable HTTP:
 Tokens are hashed at rest, shown once, independently revocable, optionally expiring, and
 never authenticated through browser cookies. Disabled accounts cannot use their tokens.
 
+The `edit_category` tool changes only the supplied `name` or `description`. Supply
+`parent_id` to move the category and its subtree below another owned category, or set
+`move_to_root` to `true` to make it top-level. The `edit_memory` tool similarly changes only
+the supplied `content` or `priority`; supply `category_id` to move it. These tools require
+the existing `categories:write` and `memories:write` scopes, respectively. Calls with no
+changes are rejected.
+
 ## Data Portability
 
 **Settings > Export my data** downloads a versioned ZIP containing `manifest.json` and

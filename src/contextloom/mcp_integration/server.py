@@ -207,6 +207,53 @@ async def update_category(
 
 
 @mcp.tool()
+async def edit_category(
+    category_id: int,
+    name: str | None = None,
+    description: str | None = None,
+    parent_id: int | None = None,
+    move_to_root: bool = False,
+) -> dict:
+    """
+    Edit an owned category while preserving omitted fields.
+
+    Supply parent_id to move the complete subtree below that category, or set move_to_root
+    to true to make it top-level. Use an empty description to clear the description.
+    """
+
+    def operation():
+        owner = _identity("categories:write")
+        category = _category(owner, category_id)
+        if all(value is None for value in (name, description, parent_id)) and not move_to_root:
+            raise ValueError("Provide at least one category field to edit.")
+        if parent_id is not None and move_to_root:
+            raise ValueError("Choose either a parent category or the root, not both.")
+        parent = category.parent
+        if parent_id is not None:
+            parent = _category(owner, parent_id)
+        elif move_to_root:
+            parent = None
+        try:
+            category = save_category(
+                owner=owner,
+                category=category,
+                name=category.name if name is None else name,
+                description=category.description if description is None else description,
+                parent=parent,
+            )
+        except KnowledgeError as exc:
+            raise ValueError(str(exc)) from exc
+        return {
+            "id": category.id,
+            "parent_id": category.parent_id,
+            "name": category.name,
+            "description": category.description,
+        }
+
+    return await _run_sync(operation)
+
+
+@mcp.tool()
 async def archive_category(category_id: int) -> dict:
     """Archive an owned category and all of its descendants and memories."""
 
@@ -270,6 +317,47 @@ async def update_memory(memory_id: int, category_id: int, content: str, priority
 
 
 @mcp.tool()
+async def edit_memory(
+    memory_id: int,
+    content: str | None = None,
+    priority: int | None = None,
+    category_id: int | None = None,
+) -> dict:
+    """
+    Edit an owned memory while preserving omitted fields.
+
+    Supply category_id to move the memory to another owned category.
+    """
+
+    def operation():
+        owner = _identity("memories:write")
+        memory = _memory(owner, memory_id)
+        if content is None and priority is None and category_id is None:
+            raise ValueError("Provide at least one memory field to edit.")
+        category = memory.category
+        if category_id is not None:
+            category = _category(owner, category_id)
+        try:
+            memory = save_memory(
+                owner=owner,
+                memory=memory,
+                category=category,
+                content=memory.content if content is None else content,
+                priority=memory.priority if priority is None else priority,
+            )
+        except KnowledgeError as exc:
+            raise ValueError(str(exc)) from exc
+        return {
+            "id": memory.id,
+            "category_id": memory.category_id,
+            "content": memory.content,
+            "priority": memory.priority,
+        }
+
+    return await _run_sync(operation)
+
+
+@mcp.tool()
 async def delete_memory(memory_id: int) -> dict:
     """Permanently delete an owned memory."""
 
@@ -288,10 +376,12 @@ def create_mcp_application():
         list_categories,
         create_category,
         update_category,
+        edit_category,
         archive_category,
         list_memories,
         create_memory,
         update_memory,
+        edit_memory,
         delete_memory,
     ):
         server.tool()(tool)
