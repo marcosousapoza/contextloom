@@ -269,15 +269,13 @@ async def archive_category(category_id: int) -> dict:
 
 
 @mcp.tool()
-async def list_memories(category_id: int | None = None) -> list[dict]:
-    """List owned memories, optionally restricted to one owned category."""
+async def list_memories(category_id: int) -> list[dict]:
+    """List owned memories in one owned category."""
 
     def operation():
         owner = _identity("memories:read")
-        query = Memory.objects.filter(owner=owner)
-        if category_id is not None:
-            _category(owner, category_id)
-            query = query.filter(category_id=category_id)
+        _category(owner, category_id)
+        query = Memory.objects.filter(owner=owner, category_id=category_id)
         return list(query.values("id", "category_id", "content", "priority", "updated_at"))
 
     return await _run_sync(operation)

@@ -275,6 +275,30 @@ def test_mcp_edit_memory_preserves_fields_and_enforces_scope_and_ownership(user,
 
 
 @pytest.mark.django_db(transaction=True)
+def test_mcp_list_memories_requires_and_filters_by_owned_category(user, other_user):
+    _, token = PersonalAccessToken.issue(owner=user, name="memory reader", scopes=["memories:read"])
+    category = Category.objects.create(owner=user, name="Requested")
+    other_category = Category.objects.create(owner=user, name="Other")
+    foreign_category = Category.objects.create(owner=other_user, name="Foreign")
+    Memory.objects.create(owner=user, category=category, content="Requested memory")
+    Memory.objects.create(owner=user, category=other_category, content="Other memory")
+
+    with TestClient(create_mcp_application(), base_url="http://localhost") as client:
+        listed = _call_tool(client, token, "list_memories", {"category_id": category.pk})
+        missing_category = _call_tool(client, token, "list_memories", {})
+        foreign_category_result = _call_tool(
+            client, token, "list_memories", {"category_id": foreign_category.pk}
+        )
+
+    listed_body = json.dumps(listed.json())
+    assert listed.json()["result"]["isError"] is False
+    assert "Requested memory" in listed_body
+    assert "Other memory" not in listed_body
+    assert missing_category.json()["result"]["isError"] is True
+    assert foreign_category_result.json()["result"]["isError"] is True
+
+
+@pytest.mark.django_db(transaction=True)
 def test_mcp_lists_edit_tools(user):
     _, token = PersonalAccessToken.issue(owner=user, name="reader", scopes=["categories:read"])
     with TestClient(create_mcp_application(), base_url="http://localhost") as client:
@@ -295,3 +319,4 @@ def test_mcp_lists_edit_tools(user):
     assert "update_memory" in tools
     assert tools["edit_category"]["inputSchema"]["required"] == ["category_id"]
     assert tools["edit_memory"]["inputSchema"]["required"] == ["memory_id"]
+    assert tools["list_memories"]["inputSchema"]["required"] == ["category_id"]
