@@ -94,9 +94,7 @@ def test_category_branch_is_paginated_and_includes_all_descendants(client, user)
 
 
 @pytest.mark.django_db
-def test_memory_search_is_owner_scoped_and_can_be_limited_to_a_branch(
-    client, user, other_user
-):
+def test_memory_search_is_owner_scoped_and_can_be_limited_to_a_branch(client, user, other_user):
     selected = Category.objects.create(owner=user, name="Selected")
     elsewhere = Category.objects.create(owner=user, name="Elsewhere")
     foreign = Category.objects.create(owner=other_user, name="Foreign")
