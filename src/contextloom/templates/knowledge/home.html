@@ -1,14 +1,150 @@
 {% extends "base.html" %}
+{% load static %}
+{% block title %}Knowledge | ContextLoom{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'knowledge.css' %}">{% endblock %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow">Knowledge workspace</p><h1>Your context</h1></div><div class="actions"><a class="button" href="{% url 'knowledge:category_create' %}">New category</a><a class="primary button" href="{% url 'knowledge:memory_create' %}">New memory</a></div></div>
-<div class="workspace">
-  <aside class="category-tree"><h2>Categories</h2>
-    {% for category in categories %}<div class="category-row" style="--depth: {% if category.parent %}1{% else %}0{% endif %}"><a href="#category-{{ category.id }}">{{ category.name }}</a><span>{{ category.memories.count }}</span></div>{% empty %}<p class="empty">Create a category to begin.</p>{% endfor %}
+<div class="knowledge-heading">
+  <div>
+    <p class="eyebrow">Knowledge workspace</p>
+    <h1>Your context</h1>
+    <p class="heading-copy">Find what matters without losing the structure around it.</p>
+  </div>
+  <div class="actions">
+    <a class="button" href="{% url 'knowledge:category_create' %}">New category</a>
+    <a class="primary button" href="{% url 'knowledge:memory_create' %}{% if selected_category %}?category={{ selected_category.id }}{% endif %}">New memory</a>
+  </div>
+</div>
+
+<form class="memory-search" method="get" action="{% url 'knowledge:home' %}" role="search">
+  <label for="memory-query">Search memories</label>
+  <div class="search-controls">
+    <input id="memory-query" type="search" name="q" value="{{ query }}" placeholder="Search your knowledge...">
+    {% if selected_category %}
+      <input type="hidden" name="category" value="{{ selected_category.id }}">
+      <select name="scope" aria-label="Search scope">
+        <option value="all"{% if search_scope != "category" %} selected{% endif %}>All knowledge</option>
+        <option value="category"{% if search_scope == "category" %} selected{% endif %}>This branch</option>
+      </select>
+    {% endif %}
+    <button class="primary" type="submit">Search</button>
+    {% if query %}<a class="clear-search" href="{% url 'knowledge:home' %}{% if selected_category %}?category={{ selected_category.id }}{% endif %}">Clear</a>{% endif %}
+  </div>
+</form>
+
+{% if categories %}
+<div class="knowledge-workspace">
+  <aside class="knowledge-sidebar" aria-label="Categories">
+    <div class="sidebar-title">
+      <h2>Categories</h2>
+      <a href="{% url 'knowledge:category_create' %}" aria-label="Create category">+</a>
+    </div>
+    <nav class="knowledge-nav" aria-label="Knowledge views">
+      <a class="tree-overview{% if view_mode == 'recent' %} selected{% endif %}" href="{% url 'knowledge:home' %}">
+        <span>Recent</span><small>8 max</small>
+      </a>
+      <a class="tree-overview{% if view_mode == 'all' %} selected{% endif %}" href="{% url 'knowledge:home' %}?view=all">
+        <span>All memories</span><strong>{{ total_memory_count }}</strong>
+      </a>
+      <ul class="category-list">
+        {% for category in root_categories %}
+          {% include "knowledge/category_tree_node.html" with category=category %}
+        {% endfor %}
+      </ul>
+    </nav>
   </aside>
-  <section class="memory-stream">
-    {% for category in categories %}<section class="category-section" id="category-{{ category.id }}"><header><div><p class="eyebrow">{% if category.parent %}{{ category.parent.name }} /{% else %}Category{% endif %}</p><h2>{{ category.name }}</h2>{% if category.description %}<p>{{ category.description }}</p>{% endif %}</div><div class="row-actions"><a href="{% url 'knowledge:memory_create' %}?category={{ category.id }}">Add memory</a><a href="{% url 'knowledge:category_edit' category.id %}">Edit</a><form method="post" action="{% url 'knowledge:category_archive' category.id %}" class="inline-form">{% csrf_token %}<button class="danger-link">Archive</button></form></div></header>
-      <div class="memory-grid">{% for memory in category.memories.all %}<article class="memory-card"><span class="priority">Priority {{ memory.priority }}</span><p>{{ memory.content|linebreaksbr }}</p><footer><time>{{ memory.updated_at|date:"M j, Y" }}</time><span><a href="{% url 'knowledge:memory_edit' memory.id %}">Edit</a><form method="post" action="{% url 'knowledge:memory_delete' memory.id %}" class="inline-form">{% csrf_token %}<button class="danger-link">Delete</button></form></span></footer></article>{% empty %}<p class="empty">No memories in this category.</p>{% endfor %}</div>
-    </section>{% empty %}<section class="blank-state"><p class="eyebrow">An empty loom</p><h2>Start with a category</h2><p>Categories create a durable structure for related knowledge.</p><a class="primary button" href="{% url 'knowledge:category_create' %}">Create category</a></section>{% endfor %}
+
+  <section class="memory-browser">
+    <header class="browser-header">
+      <div>
+        {% if query %}
+          <p class="breadcrumb">Search{% if selected_category and search_scope == 'category' %} / {{ selected_category.category_path|join:" / " }}{% endif %}</p>
+          <h2>Results for &ldquo;{{ query }}&rdquo;</h2>
+          <p>{{ page_obj.paginator.count }} memor{{ page_obj.paginator.count|pluralize:"y,ies" }} found.</p>
+        {% elif selected_category %}
+          <p class="breadcrumb">{{ selected_category.category_path|join:" / " }}</p>
+          <h2>{{ selected_category.name }}</h2>
+          {% if selected_category.description %}<p>{{ selected_category.description }}</p>{% endif %}
+          <p class="count-detail">
+            {{ selected_category.branch_memory_count }} in this branch
+            <span>&middot;</span> {{ selected_category.direct_memory_count }} directly here
+          </p>
+        {% elif view_mode == 'all' %}
+          <p class="breadcrumb">Complete library</p>
+          <h2>All memories</h2>
+          <p>{{ total_memory_count }} memories across every category.</p>
+        {% else %}
+          <p class="breadcrumb">Overview</p>
+          <h2>Recently updated</h2>
+          <p>Your eight most recently changed memories.</p>
+        {% endif %}
+      </div>
+      {% if selected_category and not query %}
+      <div class="category-actions">
+        <a class="button" href="{% url 'knowledge:memory_create' %}?category={{ selected_category.id }}">Add memory</a>
+        <details class="action-menu">
+          <summary aria-label="Category actions">...</summary>
+          <div>
+            <a href="{% url 'knowledge:category_create' %}?parent={{ selected_category.id }}">Add subcategory</a>
+            <a href="{% url 'knowledge:category_edit' selected_category.id %}">Edit category</a>
+            <form method="post" action="{% url 'knowledge:category_archive' selected_category.id %}">
+              {% csrf_token %}<button class="danger-link">Archive branch</button>
+            </form>
+          </div>
+        </details>
+      </div>
+      {% endif %}
+    </header>
+
+    <div class="memory-list">
+      {% for memory in memories %}
+      <article class="memory-row">
+        <div class="memory-meta">
+          <span class="memory-path">{{ memory.category_path }}</span>
+          <span class="priority priority-{{ memory.priority }}">Priority {{ memory.priority }}</span>
+        </div>
+        <p>{{ memory.content|linebreaksbr }}</p>
+        <footer>
+          <time datetime="{{ memory.updated_at|date:'c' }}">Updated {{ memory.updated_at|date:"M j, Y" }}</time>
+          <span class="memory-actions">
+            <a href="{% url 'knowledge:memory_edit' memory.id %}">Edit</a>
+            <form method="post" action="{% url 'knowledge:memory_delete' memory.id %}" class="inline-form">
+              {% csrf_token %}<button class="danger-link">Delete</button>
+            </form>
+          </span>
+        </footer>
+      </article>
+      {% empty %}
+      <div class="browser-empty">
+        {% if query %}
+          <p class="eyebrow">No matches</p><h3>Try a broader search</h3>
+          <p>Use fewer terms or search across all knowledge.</p>
+        {% else %}
+          <p class="eyebrow">Nothing here yet</p><h3>Add the first memory</h3>
+          <p>This category can hold memories directly, even when it has subcategories.</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if view_mode == 'recent' and total_memory_count > 8 %}
+      <a class="browse-all" href="{% url 'knowledge:home' %}?view=all">Browse all {{ total_memory_count }} memories</a>
+    {% endif %}
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination" aria-label="Memory pages">
+      {% if page_obj.has_previous %}<a href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>{% else %}<span></span>{% endif %}
+      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next</a>{% else %}<span></span>{% endif %}
+    </nav>
+    {% endif %}
   </section>
 </div>
+{% else %}
+<section class="blank-state">
+  <p class="eyebrow">An empty loom</p>
+  <h2>Start with a category</h2>
+  <p>Categories create a durable structure for related knowledge.</p>
+  <a class="primary button" href="{% url 'knowledge:category_create' %}">Create category</a>
+</section>
+{% endif %}
 {% endblock %}
