@@ -25,5 +25,11 @@ Before every upgrade:
    starting the server.
 5. Verify `/health`, `/ready`, login, and an MCP request.
 
+Recreating the single-instance pod briefly interrupts active requests, but database-backed
+browser sessions, personal access tokens, OAuth grants, and knowledge remain valid. Preserve
+`CONTEXTLOOM_SECRET_KEY` and `CONTEXTLOOM_PUBLIC_URL`: changing them can invalidate existing
+sessions or MCP credentials. MCP clients reconnect with the same credential after an upgrade
+and may need to refresh `tools/list` to discover newly added tools.
+
 Do not run an older application version against a database after its migrations have been
 applied unless that release explicitly documents rollback support.

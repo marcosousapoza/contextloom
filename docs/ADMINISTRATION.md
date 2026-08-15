@@ -20,7 +20,7 @@ must differ from the localhost defaults:
 ```console
 mkdir -p ~/contextloom
 curl --fail --location --output ~/contextloom/contextloom.yml \
-  https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.2.1/deploy/contextloom.yml
+  https://raw.githubusercontent.com/marcosousapoza/contextloom/v1.0.1/deploy/contextloom.yml
 ```
 
 Create the required Podman secret as the same user that will run the pod:
@@ -124,7 +124,7 @@ the versioned manifest in the user Quadlet directory:
 ```console
 mkdir -p ~/.config/containers/systemd
 curl --fail --location --output ~/.config/containers/systemd/contextloom.yml \
-  https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.2.1/deploy/contextloom.yml
+  https://raw.githubusercontent.com/marcosousapoza/contextloom/v1.0.1/deploy/contextloom.yml
 ```
 
 Create `~/.config/containers/systemd/contextloom.kube` with:
@@ -295,7 +295,7 @@ and review the resulting diff before replacing the pod:
 
 ```console
 curl --fail --location --output ~/contextloom/contextloom.yml.new \
-  https://raw.githubusercontent.com/marcosousapoza/contextloom/v0.2.1/deploy/contextloom.yml
+  https://raw.githubusercontent.com/marcosousapoza/contextloom/v1.0.1/deploy/contextloom.yml
 diff --unified ~/contextloom/contextloom.yml ~/contextloom/contextloom.yml.new
 podman kube play --replace ~/contextloom/contextloom.yml
 curl --fail http://127.0.0.1:8000/health
@@ -392,7 +392,7 @@ apply an update. The target image applies migrations before starting the server.
 
 To publish a release, update the version in `pyproject.toml` and the image tag in
 `deploy/contextloom.yml`, merge the tested changes into `main`, then create and push the
-matching tag, such as `v0.2.1`. The container workflow rejects malformed tags and tags that
+matching tag, such as `v1.0.1`. The container workflow rejects malformed tags and tags that
 do not match the package or manifest version.
 
 The package is public and deployment hosts can pull it without registry credentials.
