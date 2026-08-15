@@ -1,0 +1,19 @@
+<li class="category-node">
+  {% if category.tree_children %}
+  <details{% if category.tree_open %} open{% endif %}>
+    <summary class="category-link{% if category.is_selected %} selected{% endif %}">
+      <a href="{% url 'knowledge:home' %}?category={{ category.id }}">{{ category.name }}</a>
+      <span>{{ category.branch_memory_count }}</span>
+    </summary>
+    <ul>
+      {% for child in category.tree_children %}
+        {% include "knowledge/category_tree_node.html" with category=child %}
+      {% endfor %}
+    </ul>
+  </details>
+  {% else %}
+  <a class="category-link leaf{% if category.is_selected %} selected{% endif %}" href="{% url 'knowledge:home' %}?category={{ category.id }}">
+    <span>{{ category.name }}</span><strong>{{ category.branch_memory_count }}</strong>
+  </a>
+  {% endif %}
+</li>
